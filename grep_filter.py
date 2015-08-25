@@ -18,6 +18,9 @@
 
 #
 # History:
+#
+# 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
+#   version 0.2: add bar item for indication
 # 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
 #   version 0.1: initial script
 #
@@ -30,7 +33,7 @@ from __future__ import print_function
 
 SCRIPT_NAME = "grep_filter"
 SCRIPT_AUTHOR = "Simmo Saan <simmo.saan@gmail.com>"
-SCRIPT_VERSION = "0.1"
+SCRIPT_VERSION = "0.2"
 SCRIPT_LICENSE = "GPL3"
 SCRIPT_DESC = "Filter buffers automatically while searching them"
 
@@ -66,7 +69,7 @@ def filter_exists(name):
 	filters = weechat.hdata_get_list(hdata, "gui_filters")
 	filter = weechat.hdata_search(hdata, filters, "${filter.name} == %s" % name, 1)
 
-	return filter != None
+	return bool(filter)
 
 def filter_del(name):
 	weechat.command(weechat.buffer_search_main(), "/filter del %s" % name)
@@ -92,6 +95,8 @@ def input_search_cb(data, signal, signal_data):
 		filter_addreplace(name, buffers, "*", "!")
 	else:
 		filter_del(name)
+	
+	weechat.bar_item_update(SCRIPT_NAME)
 
 	return weechat.WEECHAT_RC_OK
 
@@ -107,8 +112,19 @@ def input_text_changed_cb(data, signal, signal_data):
 
 	return weechat.WEECHAT_RC_OK
 
+def bar_item_build(data, item, window, buffer, extra_info):
+	buffers = ",".join(get_merged_buffers(buffer))
+	name = "%s_%s" % (SCRIPT_NAME, buffers)
+
+	if filter_exists(name):
+		return "grep"
+	else:
+		return ""
+
 if __name__ == "__main__" and IMPORT_OK:
 	if weechat.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE, SCRIPT_DESC, "", ""):
 		weechat.hook_signal("input_search", "input_search_cb", "")
 		weechat.hook_signal("input_text_changed", "input_text_changed_cb", "")
+
+		weechat.bar_item_new("(extra)%s" % SCRIPT_NAME, "bar_item_build", "")
 
