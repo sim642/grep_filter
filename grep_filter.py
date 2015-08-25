@@ -112,17 +112,32 @@ def buffer_filtering(buffer):
 	local = weechat.buffer_get_string(buffer, "localvar_%s" % SCRIPT_LOCALVAR)
 	return {"": None, "0": False, "1": True}[local]
 
-def buffer_update(buffer):
+def buffer_build_regex(buffer):
 	hdata = weechat.hdata_get("buffer")
+	input = weechat.hdata_string(hdata, buffer, "input_buffer")
+	exact = weechat.hdata_integer(hdata, buffer, "text_search_exact")
+	where = weechat.hdata_integer(hdata, buffer, "text_search_where")
 
+	if exact:
+		input = "(?-i)%s" % input
+
+	regex = None
+	if where == 1: # message
+		regex = input
+	elif where == 2: # prefix
+		regex = "%s\\t" % input
+	else: # prefix | message
+		regex = input # TODO: impossible with current filter regex
+
+	return "!%s" % regex
+
+def buffer_update(buffer):
 	buffers = ",".join(get_merged_buffers(buffer))
 	name = "%s_%s" % (SCRIPT_NAME, buffers)
 
 	if buffer_searching(buffer):
 		if buffer_filtering(buffer) and not filter_exists(name):
-			regex = weechat.hdata_string(hdata, buffer, "input_buffer")
-
-			filter_addreplace(name, buffers, "*", "!%s" % regex)
+			filter_addreplace(name, buffers, "*", buffer_build_regex(buffer))
 		elif not buffer_filtering(buffer) and filter_exists(name):
 			filter_del(name)
 	elif filter_exists(name):
@@ -142,14 +157,11 @@ def input_search_cb(data, signal, buffer):
 	return weechat.WEECHAT_RC_OK
 
 def input_text_changed_cb(data, signal, buffer):
-	hdata = weechat.hdata_get("buffer")
-
 	if buffer_searching(buffer) and buffer_filtering(buffer):
 		buffers = ",".join(get_merged_buffers(buffer))
 		name = "%s_%s" % (SCRIPT_NAME, buffers)
-		regex = weechat.hdata_string(hdata, buffer, "input_buffer")
 
-		filter_addreplace(name, buffers, "*", "!%s" % regex)
+		filter_addreplace(name, buffers, "*", buffer_build_regex(buffer))
 
 	return weechat.WEECHAT_RC_OK
 
