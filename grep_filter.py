@@ -20,6 +20,8 @@
 # History:
 #
 # 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
+#   version 0.6: imitate search settings in filter
+# 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
 #   version 0.5: option for bar item text
 # 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
 #   version 0.4: option for default state
@@ -39,7 +41,7 @@ from __future__ import print_function
 
 SCRIPT_NAME = "grep_filter"
 SCRIPT_AUTHOR = "Simmo Saan <simmo.saan@gmail.com>"
-SCRIPT_VERSION = "0.5"
+SCRIPT_VERSION = "0.6"
 SCRIPT_LICENSE = "GPL3"
 SCRIPT_DESC = "Filter buffers automatically while searching them"
 
@@ -132,6 +134,8 @@ def buffer_build_regex(buffer):
 	return "!%s" % regex
 
 def buffer_update(buffer):
+	hdata = weechat.hdata_get("buffer")
+
 	buffers = ",".join(get_merged_buffers(buffer))
 	name = "%s_%s" % (SCRIPT_NAME, buffers)
 
@@ -142,15 +146,20 @@ def buffer_update(buffer):
 			filter_del(name)
 	elif filter_exists(name):
 		filter_del(name)
-	
+
+	where = weechat.hdata_integer(hdata, buffer, "text_search_where")
+	weechat.buffer_set(buffer, "localvar_set_%s_warn" % SCRIPT_LOCALVAR, "1" if where == 3 else "0") # warn about incorrect filter
+
 	weechat.bar_item_update(SCRIPT_BAR_ITEM)
 
 def input_search_cb(data, signal, buffer):
 	if buffer_searching(buffer) and buffer_filtering(buffer) is None:
 		enable = weechat.config_string_to_boolean(weechat.config_get_plugin("enable"))
 		weechat.buffer_set(buffer, "localvar_set_%s" % SCRIPT_LOCALVAR, "1" if enable else "0")
+		weechat.buffer_set(buffer, "localvar_set_%s_warn" % SCRIPT_LOCALVAR, "0")
 	elif not buffer_searching(buffer):
 		weechat.buffer_set(buffer, "localvar_del_%s" % SCRIPT_LOCALVAR, "")
+		weechat.buffer_set(buffer, "localvar_del_%s_warn" % SCRIPT_LOCALVAR, "")
 
 	buffer_update(buffer)
 
@@ -184,7 +193,12 @@ def bar_item_cb(data, item, window, buffer, extra_info):
 	name = "%s_%s" % (SCRIPT_NAME, buffers)
 
 	if filter_exists(name):
-		return weechat.config_get_plugin("bar_item")
+		warn = int(weechat.buffer_get_string(buffer, "localvar_%s_warn" % SCRIPT_LOCALVAR))
+
+		return "%s%s%s" % (
+			weechat.color("input_text_not_found" if warn else "bar_fg"),
+			weechat.config_get_plugin("bar_item"),
+			weechat.color("reset"))
 	else:
 		return ""
 
