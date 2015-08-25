@@ -65,6 +65,10 @@ SETTINGS = {
 		"text to show in bar item when filtering")
 }
 
+KEYS = {
+	"ctrl-G": "/%s toggle" % SCRIPT_COMMAND
+}
+
 def get_merged_buffers(ptr):
 	hdata = weechat.hdata_get("buffer")
 	buffers = weechat.hdata_get_list(hdata, "gui_buffers")
@@ -196,3 +200,5 @@ disable: disabe grep_filter in current buffer
 				weechat.config_set_plugin(option, value[0])
 
 			weechat.config_set_desc_plugin(option, "%s (default: \"%s\")" % (value[1], value[0]))
+
+		weechat.key_bind("search", KEYS)
