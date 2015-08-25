@@ -20,6 +20,8 @@
 # History:
 #
 # 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
+#   version 0.5: option for bar item text
+# 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
 #   version 0.4: option for default state
 # 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
 #   version 0.3: allow toggling during search
@@ -37,7 +39,7 @@ from __future__ import print_function
 
 SCRIPT_NAME = "grep_filter"
 SCRIPT_AUTHOR = "Simmo Saan <simmo.saan@gmail.com>"
-SCRIPT_VERSION = "0.4"
+SCRIPT_VERSION = "0.5"
 SCRIPT_LICENSE = "GPL3"
 SCRIPT_DESC = "Filter buffers automatically while searching them"
 
@@ -57,7 +59,10 @@ except ImportError:
 SETTINGS = {
 	"enable": (
 		"off",
-		"enable automatically start filtering when searching")
+		"enable automatically start filtering when searching"),
+	"bar_item": (
+		"grep",
+		"text to show in bar item when filtering")
 }
 
 def get_merged_buffers(ptr):
@@ -163,7 +168,7 @@ def bar_item_cb(data, item, window, buffer, extra_info):
 	name = "%s_%s" % (SCRIPT_NAME, buffers)
 
 	if filter_exists(name):
-		return "grep"
+		return weechat.config_get_plugin("bar_item")
 	else:
 		return ""
 
