@@ -20,6 +20,8 @@
 # History:
 #
 # 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
+#   version 0.4: option for default state
+# 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
 #   version 0.3: allow toggling during search
 # 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
 #   version 0.2: add bar item for indication
@@ -35,7 +37,7 @@ from __future__ import print_function
 
 SCRIPT_NAME = "grep_filter"
 SCRIPT_AUTHOR = "Simmo Saan <simmo.saan@gmail.com>"
-SCRIPT_VERSION = "0.3"
+SCRIPT_VERSION = "0.4"
 SCRIPT_LICENSE = "GPL3"
 SCRIPT_DESC = "Filter buffers automatically while searching them"
 
@@ -51,6 +53,12 @@ except ImportError:
 	print("This script must be run under WeeChat.")
 	print("Get WeeChat now at: http://www.weechat.org/")
 	IMPORT_OK = False
+
+SETTINGS = {
+	"enable": (
+		"off",
+		"enable automatically start filtering when searching")
+}
 
 def get_merged_buffers(ptr):
 	hdata = weechat.hdata_get("buffer")
@@ -115,7 +123,8 @@ def buffer_update(buffer):
 
 def input_search_cb(data, signal, buffer):
 	if buffer_searching(buffer) and buffer_filtering(buffer) is None:
-		weechat.buffer_set(buffer, "localvar_set_%s" % SCRIPT_LOCALVAR, "0")
+		enable = weechat.config_string_to_boolean(weechat.config_get_plugin("enable"))
+		weechat.buffer_set(buffer, "localvar_set_%s" % SCRIPT_LOCALVAR, "1" if enable else "0")
 	elif not buffer_searching(buffer):
 		weechat.buffer_set(buffer, "localvar_del_%s" % SCRIPT_LOCALVAR, "")
 
@@ -177,3 +186,8 @@ disable: disabe grep_filter in current buffer
 
 		weechat.bar_item_new("(extra)%s" % SCRIPT_BAR_ITEM, "bar_item_cb", "")
 
+		for option, value in SETTINGS.items():
+			if not weechat.config_is_set_plugin(option):
+				weechat.config_set_plugin(option, value[0])
+
+			weechat.config_set_desc_plugin(option, "%s (default: \"%s\")" % (value[1], value[0]))
