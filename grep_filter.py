@@ -20,6 +20,8 @@
 # History:
 #
 # 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
+#   version 0.7: mute filter add/del
+# 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
 #   version 0.6: imitate search settings in filter
 # 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
 #   version 0.5: option for bar item text
@@ -41,7 +43,7 @@ from __future__ import print_function
 
 SCRIPT_NAME = "grep_filter"
 SCRIPT_AUTHOR = "Simmo Saan <simmo.saan@gmail.com>"
-SCRIPT_VERSION = "0.6"
+SCRIPT_VERSION = "0.7"
 SCRIPT_LICENSE = "GPL3"
 SCRIPT_DESC = "Filter buffers automatically while searching them"
 
@@ -97,13 +99,13 @@ def filter_exists(name):
 	return bool(filter)
 
 def filter_del(name):
-	weechat.command(weechat.buffer_search_main(), "/filter del %s" % name)
+	weechat.command(weechat.buffer_search_main(), "/mute filter del %s" % name)
 
 def filter_addreplace(name, buffers, tags, regex):
 	if filter_exists(name):
 		filter_del(name)
 
-	weechat.command(weechat.buffer_search_main(), "/filter add %s %s %s %s" % (name, buffers, tags, regex))
+	weechat.command(weechat.buffer_search_main(), "/mute filter add %s %s %s %s" % (name, buffers, tags, regex))
 
 def buffer_searching(buffer):
 	hdata = weechat.hdata_get("buffer")
