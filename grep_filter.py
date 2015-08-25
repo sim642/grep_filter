@@ -20,6 +20,8 @@
 # History:
 #
 # 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
+#   version 0.3: allow toggling during search
+# 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
 #   version 0.2: add bar item for indication
 # 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
 #   version 0.1: initial script
@@ -33,9 +35,13 @@ from __future__ import print_function
 
 SCRIPT_NAME = "grep_filter"
 SCRIPT_AUTHOR = "Simmo Saan <simmo.saan@gmail.com>"
-SCRIPT_VERSION = "0.2"
+SCRIPT_VERSION = "0.3"
 SCRIPT_LICENSE = "GPL3"
 SCRIPT_DESC = "Filter buffers automatically while searching them"
+
+SCRIPT_COMMAND = SCRIPT_NAME
+SCRIPT_BAR_ITEM = SCRIPT_NAME
+SCRIPT_LOCALVAR = SCRIPT_NAME
 
 IMPORT_OK = True
 
@@ -80,39 +86,70 @@ def filter_addreplace(name, buffers, tags, regex):
 
 	weechat.command(weechat.buffer_search_main(), "/filter add %s %s %s %s" % (name, buffers, tags, regex))
 
-def buffer_searching(ptr):
+def buffer_searching(buffer):
 	hdata = weechat.hdata_get("buffer")
 
-	return bool(weechat.hdata_integer(hdata, ptr, "text_search"))
+	return bool(weechat.hdata_integer(hdata, buffer, "text_search"))
 
-def input_search_cb(data, signal, signal_data):
+def buffer_filtering(buffer):
+	local = weechat.buffer_get_string(buffer, "localvar_%s" % SCRIPT_LOCALVAR)
+	return {"": None, "0": False, "1": True}[local]
+
+def buffer_update(buffer):
 	hdata = weechat.hdata_get("buffer")
 
-	buffers = ",".join(get_merged_buffers(signal_data))
+	buffers = ",".join(get_merged_buffers(buffer))
 	name = "%s_%s" % (SCRIPT_NAME, buffers)
 
-	if buffer_searching(signal_data):
-		filter_addreplace(name, buffers, "*", "!")
-	else:
+	if buffer_searching(buffer):
+		if buffer_filtering(buffer) and not filter_exists(name):
+			regex = weechat.hdata_string(hdata, buffer, "input_buffer")
+
+			filter_addreplace(name, buffers, "*", "!%s" % regex)
+		elif not buffer_filtering(buffer) and filter_exists(name):
+			filter_del(name)
+	elif filter_exists(name):
 		filter_del(name)
 	
-	weechat.bar_item_update(SCRIPT_NAME)
+	weechat.bar_item_update(SCRIPT_BAR_ITEM)
+
+def input_search_cb(data, signal, buffer):
+	if buffer_searching(buffer) and buffer_filtering(buffer) is None:
+		weechat.buffer_set(buffer, "localvar_set_%s" % SCRIPT_LOCALVAR, "0")
+	elif not buffer_searching(buffer):
+		weechat.buffer_set(buffer, "localvar_del_%s" % SCRIPT_LOCALVAR, "")
+
+	buffer_update(buffer)
 
 	return weechat.WEECHAT_RC_OK
 
-def input_text_changed_cb(data, signal, signal_data):
+def input_text_changed_cb(data, signal, buffer):
 	hdata = weechat.hdata_get("buffer")
 
-	if buffer_searching(signal_data):
-		buffers = ",".join(get_merged_buffers(signal_data))
+	if buffer_searching(buffer) and buffer_filtering(buffer):
+		buffers = ",".join(get_merged_buffers(buffer))
 		name = "%s_%s" % (SCRIPT_NAME, buffers)
-		regex = weechat.hdata_string(hdata, signal_data, "input_buffer")
+		regex = weechat.hdata_string(hdata, buffer, "input_buffer")
 
 		filter_addreplace(name, buffers, "*", "!%s" % regex)
 
 	return weechat.WEECHAT_RC_OK
 
-def bar_item_build(data, item, window, buffer, extra_info):
+def command_cb(data, buffer, args):
+	if args == "enable":
+		weechat.buffer_set(buffer, "localvar_set_%s" % SCRIPT_LOCALVAR, "1")
+	elif args == "disable":
+		weechat.buffer_set(buffer, "localvar_set_%s" % SCRIPT_LOCALVAR, "0")
+	elif args == "toggle":
+		weechat.buffer_set(buffer, "localvar_set_%s" % SCRIPT_LOCALVAR, "0" if buffer_filtering(buffer) else "1")
+	else:
+		pass
+
+	buffer_update(buffer)
+
+	return weechat.WEECHAT_RC_OK
+
+def bar_item_cb(data, item, window, buffer, extra_info):
 	buffers = ",".join(get_merged_buffers(buffer))
 	name = "%s_%s" % (SCRIPT_NAME, buffers)
 
@@ -126,5 +163,17 @@ if __name__ == "__main__" and IMPORT_OK:
 		weechat.hook_signal("input_search", "input_search_cb", "")
 		weechat.hook_signal("input_text_changed", "input_text_changed_cb", "")
 
-		weechat.bar_item_new("(extra)%s" % SCRIPT_NAME, "bar_item_build", "")
+		weechat.hook_command(SCRIPT_COMMAND, SCRIPT_DESC,
+"""enable
+ || disable
+ || toggle""",
+""" enable: enable grep_filter in current buffer
+disable: disabe grep_filter in current buffer
+ toggle: toggle grep_filter in current buffer""",
+"""enable
+ || disable
+ || toggle""",
+		"command_cb", "")
+
+		weechat.bar_item_new("(extra)%s" % SCRIPT_BAR_ITEM, "bar_item_cb", "")
 
