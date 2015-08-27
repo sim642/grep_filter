@@ -49,6 +49,8 @@ SCRIPT_VERSION = "0.8"
 SCRIPT_LICENSE = "GPL3"
 SCRIPT_DESC = "Filter buffers automatically while searching them"
 
+SCRIPT_REPO = "https://github.com/sim642/grep_filter"
+
 SCRIPT_COMMAND = SCRIPT_NAME
 SCRIPT_BAR_ITEM = SCRIPT_NAME
 SCRIPT_LOCALVAR = SCRIPT_NAME
