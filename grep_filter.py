@@ -19,6 +19,8 @@
 #
 # History:
 #
+# 2015-08-27, Simmo Saan <simmo.saan@gmail.com>
+#   version 0.8: add documentation
 # 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
 #   version 0.7: mute filter add/del
 # 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
@@ -43,7 +45,7 @@ from __future__ import print_function
 
 SCRIPT_NAME = "grep_filter"
 SCRIPT_AUTHOR = "Simmo Saan <simmo.saan@gmail.com>"
-SCRIPT_VERSION = "0.7"
+SCRIPT_VERSION = "0.8"
 SCRIPT_LICENSE = "GPL3"
 SCRIPT_DESC = "Filter buffers automatically while searching them"
 
@@ -74,6 +76,10 @@ KEYS = {
 }
 
 def get_merged_buffers(ptr):
+	"""
+	Get a list of buffers which are merged with "ptr".
+	"""
+
 	hdata = weechat.hdata_get("buffer")
 	buffers = weechat.hdata_get_list(hdata, "gui_buffers")
 	buffer = weechat.hdata_search(hdata, buffers, "${buffer.number} == %i" % weechat.hdata_integer(hdata, ptr, "number"), 1)
@@ -92,6 +98,10 @@ def get_merged_buffers(ptr):
 	return ret
 
 def filter_exists(name):
+	"""
+	Check whether a filter named "name" exists.
+	"""
+
 	hdata = weechat.hdata_get("filter")
 	filters = weechat.hdata_get_list(hdata, "gui_filters")
 	filter = weechat.hdata_search(hdata, filters, "${filter.name} == %s" % name, 1)
@@ -99,24 +109,44 @@ def filter_exists(name):
 	return bool(filter)
 
 def filter_del(name):
+	"""
+	Delete a filter named "name".
+	"""
+
 	weechat.command(weechat.buffer_search_main(), "/mute filter del %s" % name)
 
 def filter_addreplace(name, buffers, tags, regex):
+	"""
+	Add (or replace if already exists) a filter named "name" with specified argumets.
+	"""
+
 	if filter_exists(name):
 		filter_del(name)
 
 	weechat.command(weechat.buffer_search_main(), "/mute filter add %s %s %s %s" % (name, buffers, tags, regex))
 
 def buffer_searching(buffer):
+	"""
+	Check whether "buffer" is in search mode.
+	"""
+
 	hdata = weechat.hdata_get("buffer")
 
 	return bool(weechat.hdata_integer(hdata, buffer, "text_search"))
 
 def buffer_filtering(buffer):
+	"""
+	Check whether "buffer" should be filtered.
+	"""
+
 	local = weechat.buffer_get_string(buffer, "localvar_%s" % SCRIPT_LOCALVAR)
 	return {"": None, "0": False, "1": True}[local]
 
 def buffer_build_regex(buffer):
+	"""
+	Build a regex according to "buffer"'s search settings.
+	"""
+
 	hdata = weechat.hdata_get("buffer")
 	input = weechat.hdata_string(hdata, buffer, "input_buffer")
 	exact = weechat.hdata_integer(hdata, buffer, "text_search_exact")
@@ -136,6 +166,10 @@ def buffer_build_regex(buffer):
 	return "!%s" % regex
 
 def buffer_update(buffer):
+	"""
+	Refresh filtering in "buffer" by updating (or removing) the filter and update the bar item.
+	"""
+
 	hdata = weechat.hdata_get("buffer")
 
 	buffers = ",".join(get_merged_buffers(buffer))
@@ -155,6 +189,10 @@ def buffer_update(buffer):
 	weechat.bar_item_update(SCRIPT_BAR_ITEM)
 
 def input_search_cb(data, signal, buffer):
+	"""
+	Handle "input_search" signal.
+	"""
+
 	if buffer_searching(buffer) and buffer_filtering(buffer) is None:
 		enable = weechat.config_string_to_boolean(weechat.config_get_plugin("enable"))
 		weechat.buffer_set(buffer, "localvar_set_%s" % SCRIPT_LOCALVAR, "1" if enable else "0")
@@ -168,6 +206,10 @@ def input_search_cb(data, signal, buffer):
 	return weechat.WEECHAT_RC_OK
 
 def input_text_changed_cb(data, signal, buffer):
+	"""
+	Handle "input_text_changed" signal.
+	"""
+
 	if buffer_searching(buffer) and buffer_filtering(buffer):
 		buffers = ",".join(get_merged_buffers(buffer))
 		name = "%s_%s" % (SCRIPT_NAME, buffers)
@@ -177,6 +219,10 @@ def input_text_changed_cb(data, signal, buffer):
 	return weechat.WEECHAT_RC_OK
 
 def command_cb(data, buffer, args):
+	"""
+	Handle command.
+	"""
+
 	if args == "enable":
 		weechat.buffer_set(buffer, "localvar_set_%s" % SCRIPT_LOCALVAR, "1")
 	elif args == "disable":
@@ -191,6 +237,10 @@ def command_cb(data, buffer, args):
 	return weechat.WEECHAT_RC_OK
 
 def bar_item_cb(data, item, window, buffer, extra_info):
+	"""
+	Build the bar item's content for "buffer".
+	"""
+
 	buffers = ",".join(get_merged_buffers(buffer))
 	name = "%s_%s" % (SCRIPT_NAME, buffers)
 
@@ -213,9 +263,15 @@ if __name__ == "__main__" and IMPORT_OK:
 """enable
  || disable
  || toggle""",
-""" enable: enable grep_filter in current buffer
-disable: disabe grep_filter in current buffer
- toggle: toggle grep_filter in current buffer""",
+""" enable: enable {0} in current buffer
+disable: disable {0} in current buffer
+ toggle: toggle {0} in current buffer
+
+By default a bind in "search" context is added to toggle with "ctrl-G".
+To see {0} status during search, add "{1}" item to some bar. On default configuration you can do it with:
+    /set weechat.bar.input.items "[input_prompt]+(away),[{1}],[input_search],[input_paste],input_text"
+
+Due to technical reasons with /filter it is not possible to exactly {0} in "pre|msg" search mode, thus the bar item is shown in warning color.""".format(SCRIPT_NAME, SCRIPT_BAR_ITEM),
 """enable
  || disable
  || toggle""",
