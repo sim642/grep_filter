@@ -64,6 +64,8 @@ except ImportError:
 	print("Get WeeChat now at: http://www.weechat.org/")
 	IMPORT_OK = False
 
+import re # re.escape
+
 SETTINGS = {
 	"enable": (
 		"off",
@@ -153,19 +155,23 @@ def buffer_build_regex(buffer):
 	input = weechat.hdata_string(hdata, buffer, "input_buffer")
 	exact = weechat.hdata_integer(hdata, buffer, "text_search_exact")
 	where = weechat.hdata_integer(hdata, buffer, "text_search_where")
+	regex = weechat.hdata_integer(hdata, buffer, "text_search_regex")
+
+	if not regex:
+		input = re.escape(input)
 
 	if exact:
 		input = "(?-i)%s" % input
 
-	regex = None
+	filter_regex = None
 	if where == 1: # message
-		regex = input
+		filter_regex = input
 	elif where == 2: # prefix
-		regex = "%s\\t" % input
+		filter_regex = "%s\\t" % input
 	else: # prefix | message
-		regex = input # TODO: impossible with current filter regex
+		filter_regex = input # TODO: impossible with current filter regex
 
-	return "!%s" % regex
+	return "!%s" % filter_regex
 
 def buffer_update(buffer):
 	"""
