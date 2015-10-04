@@ -19,6 +19,8 @@
 #
 # History:
 #
+# 2015-10-04, Simmo Saan <simmo.saan@gmail.com>
+#   version 0.9: fix text search imitation in filter
 # 2015-08-27, Simmo Saan <simmo.saan@gmail.com>
 #   version 0.8: add documentation
 # 2015-08-25, Simmo Saan <simmo.saan@gmail.com>
@@ -45,7 +47,7 @@ from __future__ import print_function
 
 SCRIPT_NAME = "grep_filter"
 SCRIPT_AUTHOR = "Simmo Saan <simmo.saan@gmail.com>"
-SCRIPT_VERSION = "0.8"
+SCRIPT_VERSION = "0.9"
 SCRIPT_LICENSE = "GPL3"
 SCRIPT_DESC = "Filter buffers automatically while searching them"
 
@@ -184,7 +186,7 @@ def buffer_update(buffer):
 	name = "%s_%s" % (SCRIPT_NAME, buffers)
 
 	if buffer_searching(buffer):
-		if buffer_filtering(buffer) and not filter_exists(name):
+		if buffer_filtering(buffer):
 			filter_addreplace(name, buffers, "*", buffer_build_regex(buffer))
 		elif not buffer_filtering(buffer) and filter_exists(name):
 			filter_del(name)
