@@ -272,7 +272,9 @@ if __name__ == "__main__" and IMPORT_OK:
 		weechat.hook_signal("input_text_changed", "input_text_changed_cb", "")
 
 		weechat.hook_command(SCRIPT_COMMAND, SCRIPT_DESC,
-"""enable || disable || toggle""",
+"""enable
+ || disable
+ || toggle""",
 """ enable: enable {0} in current buffer
 disable: disable {0} in current buffer
  toggle: toggle {0} in current buffer
@@ -282,7 +284,9 @@ To see {0} status during search, add "{1}" item to some bar. On default configur
     /set weechat.bar.input.items "[input_prompt]+(away),[{1}],[input_search],[input_paste],input_text"
 
 Due to technical reasons with /filter it is not possible to exactly {0} in "pre|msg" search mode, thus the bar item is shown in warning color.""".format(SCRIPT_NAME, SCRIPT_BAR_ITEM),
-"""enable || disable || toggle""",
+"""enable
+ || disable
+ || toggle""".replace("\n", ""),
 		"command_cb", "")
 
 		weechat.bar_item_new("(extra)%s" % SCRIPT_BAR_ITEM, "bar_item_cb", "")
