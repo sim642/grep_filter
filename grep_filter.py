@@ -65,7 +65,7 @@ try:
 	import weechat
 except ImportError:
 	print("This script must be run under WeeChat.")
-	print("Get WeeChat now at: http://www.weechat.org/")
+	print("Get WeeChat now at: https://weechat.org/")
 	IMPORT_OK = False
 
 import re # re.escape
